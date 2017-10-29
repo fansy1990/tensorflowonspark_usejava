@@ -17,8 +17,10 @@
       <maven.compiler.source>1.8</maven.compiler.source>
       <maven.compiler.target>1.8</maven.compiler.target>
       <encoding>UTF-8</encoding>
-      <hadoop.version>2.7.4</hadoop.version>
-      <spark.version>1.5.1</spark.version>
+      <!--<hadoop.version>2.7.4</hadoop.version>
+      <spark.version>1.5.1</spark.version>-->
+      <hadoop.version>2.6.0-cdh5.7.3</hadoop.version>
+      <spark.version>1.6.0-cdh5.7.3</spark.version>
   </properties>
 
   <dependencies>
