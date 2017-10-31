@@ -2,8 +2,6 @@
 <project version="4">
   <component name="ResourceBundleManager">
     <file url="file://$PROJECT_DIR$/src/main/java/org/apache/spark/util/hadoop.properties" />
-    <file url="file://$PROJECT_DIR$/src/main/java/org/apache/spark/util/hadoop_huawei.properties" />
     <file url="file://$PROJECT_DIR$/src/main/java/org/apache/spark/util/spark.properties" />
-    <file url="file://$PROJECT_DIR$/src/main/java/org/apache/spark/util/spark_huawei.properties" />
   </component>
 </project>

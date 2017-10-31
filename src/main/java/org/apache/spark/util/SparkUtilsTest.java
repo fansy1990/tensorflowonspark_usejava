@@ -133,7 +133,9 @@ public class SparkUtilsTest {
     public static void main(String[] args) throws IOException {
 //        test1();
 //        test2();
-        test3();
+//        test3();
+//        test4();
+        test5();
     }
 
     /**
@@ -150,13 +152,14 @@ public class SparkUtilsTest {
                 "--class","org.apache.spark.deploy.PythonRunner",
                 "--executor-memory","720M",
                 "--executor-cores","1",
+                "--driver-memory","512M",
                 "--py-files",
                 "hdfs://s0:8020/user/root/pyspark.zip,hdfs://s0:8020/user/root/py4j-0.8.2.1-src.zip"
 
         };
-        String hadoopConfigFile = ".\\src\\main\\java\\org\\apache\\spark\\util\\hadoop.properties";
+        String hadoopConfigFile = "src/main/java/org/apache/spark/util/hadoop.properties";
         System.out.println(new File(".").getAbsoluteFile());
-        String sparkConfigFile = ".\\src\\main\\java\\org\\apache\\spark\\util\\spark.properties";
+        String sparkConfigFile = "src/main/java/org/apache/spark/util/spark.properties";
 
         int t = runSparkJob(hadoopConfigFile, sparkConfigFile, args);
         System.out.println("result : " + t);
@@ -182,9 +185,9 @@ public class SparkUtilsTest {
                 "hdfs://hacluster/user/root/tipdm/pyspark.zip,hdfs://hacluster/user/root/tipdm/py4j-0.8.2.1-src.zip"
 
         };
-        String hadoopConfigFile = ".\\src\\main\\java\\org\\apache\\spark\\util\\hadoop_hw.properties";
+        String hadoopConfigFile = "./src/main/java/org/apache/spark/util/hadoop_hw.properties";
         System.out.println(new File(".").getAbsoluteFile());
-        String sparkConfigFile = ".\\src\\main\\java\\org\\apache\\spark\\util\\spark_hw.properties";
+        String sparkConfigFile = "./src/main/java/org/apache/spark/util/spark_hw.properties";
 
         int t = runSparkJob(hadoopConfigFile, sparkConfigFile, args);
 
@@ -213,14 +216,76 @@ public class SparkUtilsTest {
                 "hdfs://s0:8020/user/root/pyspark.zip,hdfs://s0:8020/user/root/py4j-0.8.2.1-src.zip"
 
         };
-        String hadoopConfigFile = ".\\src\\main\\java\\org\\apache\\spark\\util\\hadoop.properties";
-        System.out.println(new File(".").getAbsoluteFile());
-        String sparkConfigFile = ".\\src\\main\\java\\org\\apache\\spark\\util\\spark.properties";
+        String hadoopConfigFile = "./src/main/java/org/apache/spark/util/hadoop.properties";
+        String sparkConfigFile = "./src/main/java/org/apache/spark/util/spark.properties";
+        int t = runSparkJob(hadoopConfigFile, sparkConfigFile, args);
+        System.out.println("result : " + t);
+
+    }
+
+
+    /**
+     * iris02_with_hdfs.py
+     * 未测试通过
+     * @throws IOException
+     */
+    private static void test4() throws IOException {
+        String pyFileStr = "src/main/java/pyfiles/iris02_with_hdfs.py";
+        File pyFile = new File(pyFileStr);
+        System.out.println(pyFile.toURI().toString());
+        String[] args = {
+                "--primary-py-file",pyFile.toURI().toString(),
+                "--archives","hdfs://s0:8020/user/root/Python.zip#Python",
+                "--class","org.apache.spark.deploy.PythonRunner",
+                "--executor-memory","720M",
+                "--executor-cores","1",
+                "--num-executors","3",
+                "--py-files",
+                "hdfs://s0:8020/user/root/pyspark.zip,hdfs://s0:8020/user/root/py4j-0.8.2.1-src.zip",
+                "--arg","--input",
+                "--arg","hdfs://s0:8020/user/root/iris01.csv",
+                "--arg","--model",
+                "--arg","hdfs://s0:8020/user/fansy/iris_model00",
+                "--arg","--mode",
+                "--arg","train"
+        };
+        String hadoopConfigFile = "./src/main/java/org/apache/spark/util/hadoop.properties";
+        String sparkConfigFile = "./src/main/java/org/apache/spark/util/spark.properties";
 
         int t = runSparkJob(hadoopConfigFile, sparkConfigFile, args);
         System.out.println("result : " + t);
 
     }
 
+    private static void test5() throws IOException {
+        String pyFileStr = "src/main/java/pyfiles/iris02_with_hdfs.py";
+        File pyFile = new File(pyFileStr);
+        System.out.println(pyFile.toURI().toString());
+        String[] args = {
+                "--primary-py-file",pyFile.toURI().toString(),
+                "--archives","hdfs://hacluster/user/root/tipdm/Python.zip#Python",
+                "--class","org.apache.spark.deploy.PythonRunner",
+                "--num-executors","3",
+                "--executor-memory","2048M",
+                "--executor-cores","4",
+                "--py-files",
+                "hdfs://hacluster/user/root/tipdm/pyspark.zip,hdfs://hacluster/user/root/tipdm/py4j-0.8.2.1-src.zip",
+                "--arg","--input",
+                "--arg","hdfs://hacluster/user/root/tipdm/iris01.csv",
+                "--arg","--model",
+                "--arg","hdfs://hacluster/tmp/iris_model00",
+                "--arg","--mode",
+                "--arg","train"
+
+        };
+        String hadoopConfigFile = "./src/main/java/org/apache/spark/util/hadoop_hw.properties";
+        System.out.println(new File(".").getAbsoluteFile());
+        String sparkConfigFile = "./src/main/java/org/apache/spark/util/spark_hw.properties";
+
+        int t = runSparkJob(hadoopConfigFile, sparkConfigFile, args);
+
+        System.out.println("result : " + t);
+
+    }
 
 }
