@@ -15,6 +15,7 @@ def map_fun(args, ctx):
   import numpy
   import tensorflow as tf
   import time
+  import math
 
   worker_num = ctx.worker_num
   job_name = ctx.job_name
@@ -40,9 +41,19 @@ def map_fun(args, ctx):
       labels.append(item[4])
     xs = numpy.array(images)
     xs = xs.astype(numpy.float32)
-    ys = numpy.array(labels)
-    ys = ys.astype(numpy.int)
+    ys = dense_to_one_hot(numpy.array(labels, dtype=numpy.uint), 3)
+    ys = ys.astype(numpy.uint8)
     return (xs, ys)
+
+  def dense_to_one_hot(labels_dense, num_classes):
+    """Convert class labels from scalars to one-hot vectors."""
+    num_labels = labels_dense.shape[0]
+    index_offset = numpy.arange(num_labels) * num_classes
+    labels_one_hot = numpy.zeros((num_labels, num_classes))
+    tt = index_offset + labels_dense.ravel()
+    tt = tt.astype(numpy.int32)
+    labels_one_hot.flat[tt] = 1
+    return labels_one_hot
 
   if job_name == "ps":
     server.join()
@@ -53,37 +64,34 @@ def map_fun(args, ctx):
         worker_device="/job:worker/task:%d" % task_index,
         cluster=cluster)):
 
+        # network
         x = tf.placeholder(tf.float32, [None, 4])
 
         # paras
-        W = tf.Variable(tf.zeros([4, 1]))
-        b = tf.Variable(tf.zeros([1]))
+        W = tf.Variable(tf.zeros([4, 3]))
+        b = tf.Variable(tf.zeros([3]))
 
         y = tf.nn.softmax(tf.matmul(x, W) + b)
-        y_ = tf.placeholder(tf.float32, [None, 1])
+        y_ = tf.placeholder(tf.float32, [None, 3])
 
         # loss func
         cross_entropy = -tf.reduce_sum(y_ * tf.log(y))
+
         global_step = tf.Variable(0)
-        train_op = tf.train.GradientDescentOptimizer(0.01).minimize(cross_entropy,
-                                                                    global_step=global_step)
-        # train_op = tf.train.AdagradOptimizer(0.01).minimize(
-            # loss, global_step=global_step)
-        # init
-        init = tf.initialize_all_variables()
-      #
-      # # Test trained model
-        label = tf.argmax(y_, 1, name="label")
-        prediction = tf.argmax(y, 1,name="prediction")
+
+        train_op = tf.train.GradientDescentOptimizer(0.01).minimize(cross_entropy,global_step=global_step )
+
+        # Test trained model
+        label = tf.argmax(y_, 1, name="label") #??? does the function argmax use in the right way ?
+        prediction = tf.argmax(y, 1, name="prediction")
         correct_prediction = tf.equal(prediction, label)
-      #
+
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name="accuracy")
         tf.summary.scalar("acc", accuracy)
 
         saver = tf.train.Saver()
         summary_op = tf.summary.merge_all()
-        # init_op = tf.global_variables_initializer()
-
+        init_op = tf.global_variables_initializer()
     # Create a "supervisor", which oversees the training process and stores model state into HDFS
     logdir = TFNode.hdfs_path(ctx, args.model)
     print("tensorflow model path: {0}".format(logdir))
@@ -92,12 +100,12 @@ def map_fun(args, ctx):
     if args.mode == "train":
       sv = tf.train.Supervisor(is_chief=(task_index == 0),
                                logdir=logdir,
-                               init_op=init,
+                               init_op=init_op,
                                summary_op=None,
                                saver=saver,
                                global_step=global_step,
                                stop_grace_secs=300,
-                               save_model_secs=10)
+                               save_model_secs=1)
 
     # The supervisor takes care of session initialization, restoring from
     # a checkpoint, and closing when done or an error occurs.

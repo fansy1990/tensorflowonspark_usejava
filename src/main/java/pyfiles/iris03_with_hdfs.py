@@ -15,6 +15,7 @@ def map_fun(args, ctx):
   import numpy
   import tensorflow as tf
   import time
+  import math
 
   worker_num = ctx.worker_num
   job_name = ctx.job_name
@@ -44,6 +45,9 @@ def map_fun(args, ctx):
     ys = ys.astype(numpy.int)
     return (xs, ys)
 
+  hidden_units = 20
+  IMAGE_PIXELS = 2
+  y_size = 1
   if job_name == "ps":
     server.join()
   elif job_name == "worker":
@@ -53,37 +57,49 @@ def map_fun(args, ctx):
         worker_device="/job:worker/task:%d" % task_index,
         cluster=cluster)):
 
-        x = tf.placeholder(tf.float32, [None, 4])
+        # Variables of the hidden layer
+        hid_w = tf.Variable(tf.truncated_normal([4, hidden_units],
+                                                stddev=1.0 / 2), name="hid_w")
+        hid_b = tf.Variable(tf.zeros([hidden_units]), name="hid_b")
+        tf.summary.histogram("hidden_weights", hid_w)
 
-        # paras
-        W = tf.Variable(tf.zeros([4, 1]))
-        b = tf.Variable(tf.zeros([1]))
+        # Variables of the softmax layer
+        sm_w = tf.Variable(tf.truncated_normal([hidden_units, y_size],
+                                               stddev=1.0 / math.sqrt(hidden_units)), name="sm_w")
+        sm_b = tf.Variable(tf.zeros([y_size]), name="sm_b")
+        tf.summary.histogram("softmax_weights", sm_w)
 
-        y = tf.nn.softmax(tf.matmul(x, W) + b)
-        y_ = tf.placeholder(tf.float32, [None, 1])
+        # Placeholders or QueueRunner/Readers for input data
+        x = tf.placeholder(tf.float32, [None, IMAGE_PIXELS * IMAGE_PIXELS], name="x")
+        y_ = tf.placeholder(tf.float32, [None, y_size], name="y_")
 
-        # loss func
-        cross_entropy = -tf.reduce_sum(y_ * tf.log(y))
+        x_img = tf.reshape(x, [-1, IMAGE_PIXELS, IMAGE_PIXELS, 1])
+        tf.summary.image("x_img", x_img)
+
+        hid_lin = tf.nn.xw_plus_b(x, hid_w, hid_b)
+        hid = tf.nn.relu(hid_lin)
+
+        y = tf.nn.softmax(tf.nn.xw_plus_b(hid, sm_w, sm_b))
+
         global_step = tf.Variable(0)
-        train_op = tf.train.GradientDescentOptimizer(0.01).minimize(cross_entropy,
-                                                                    global_step=global_step)
-        # train_op = tf.train.AdagradOptimizer(0.01).minimize(
-            # loss, global_step=global_step)
-        # init
-        init = tf.initialize_all_variables()
-      #
-      # # Test trained model
+
+        loss = -tf.reduce_sum(y_ * tf.log(tf.clip_by_value(y, 1e-10, 1.0)))
+        tf.summary.scalar("loss", loss)
+
+        train_op = tf.train.AdagradOptimizer(0.01).minimize(
+            loss, global_step=global_step)
+
+        # Test trained model
         label = tf.argmax(y_, 1, name="label")
-        prediction = tf.argmax(y, 1,name="prediction")
+        prediction = tf.argmax(y, 1, name="prediction")
         correct_prediction = tf.equal(prediction, label)
-      #
+
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name="accuracy")
         tf.summary.scalar("acc", accuracy)
 
         saver = tf.train.Saver()
         summary_op = tf.summary.merge_all()
-        # init_op = tf.global_variables_initializer()
-
+        init_op = tf.global_variables_initializer()
     # Create a "supervisor", which oversees the training process and stores model state into HDFS
     logdir = TFNode.hdfs_path(ctx, args.model)
     print("tensorflow model path: {0}".format(logdir))
@@ -92,7 +108,7 @@ def map_fun(args, ctx):
     if args.mode == "train":
       sv = tf.train.Supervisor(is_chief=(task_index == 0),
                                logdir=logdir,
-                               init_op=init,
+                               init_op=init_op,
                                summary_op=None,
                                saver=saver,
                                global_step=global_step,
@@ -166,4 +182,4 @@ if __name__ == '__main__':
                             TFCluster.InputMode.SPARK)
     cluster.train(input_data, 1)
 
-    cluster.shutdown()	
+    cluster.shutdown()
