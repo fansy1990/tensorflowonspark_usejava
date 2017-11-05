@@ -108,7 +108,6 @@ public class SparkUtilsTest {
         for(final String name: properties.stringPropertyNames()){
             conf.set(name,properties.getProperty(name));
         }
-
     }
 
     private static void updateConf(SparkConf conf,String configFile )throws IOException{

@@ -165,7 +165,12 @@ def map_fun(args, ctx):
 
             if sv.is_chief:
               summary_writer.add_summary(summary, step)
+          else: # args.mode == "inference"
+            labels, preds, acc = sess.run([label, prediction, accuracy], feed_dict=feed)
 
+            results = ["{0} Label: {1}, Prediction: {2}".format(datetime.now().isoformat(), l, p) for l,p in zip(labels,preds)]
+            tf_feed.batch_results(results)
+            print("acc: {0}".format(acc))
       if sv.should_stop() or step >= args.steps:
         tf_feed.terminate()
 
