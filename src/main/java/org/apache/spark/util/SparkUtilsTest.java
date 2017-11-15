@@ -3,6 +3,7 @@ package org.apache.spark.util;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.util.HadoopUtil;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.spark.SparkConf;
@@ -36,10 +37,10 @@ public class SparkUtilsTest {
         }else{
             logger.info("资源文件存在！");
         }
-        Configuration conf = new Configuration();
-        logger.info("updating hadoop resources ...");
-        updateConf(conf,hadoopConfigFile);
-
+//        Configuration conf = new Configuration();
+//        logger.info("updating hadoop resources ...");
+//        updateConf(conf,hadoopConfigFile);
+        Configuration conf = HadoopUtil.getConf();
         String appId = runSpark(conf,sparkConfigFile,args);
 
         logger.info("appId:{}",appId);
