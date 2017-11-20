@@ -18,7 +18,7 @@ public class EsRead {
                 "--executor-memory",SparkEngine.getExecutorMemory(),
                 "--jar", SparkEngine.getAlgorithmJar(),
                 "--arg","mmconsume/payevents",
-                "--arg","default.demo01",
+                "--arg","default.demo02",
                 "--arg","10",
                 "--arg",appName
         };

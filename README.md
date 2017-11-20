@@ -16,3 +16,7 @@ jar包到 集群各个子节点 /opt/es_jars ;
 
 2. 修改spark.properties 文件中的spark.yarn.appMasterEnv.SPARK_DIST_CLASSPATH
  参数，添加  :/opt/es_jars/*
+
+3. 如果要写入Hive，那么需要：
+  spark.yarn.appMasterEnv.SPARK_DIST_CLASSPATH
+  添加Hive相关jar包路径，同时还要其配置文件路径；
