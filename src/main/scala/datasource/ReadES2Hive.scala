@@ -22,7 +22,9 @@ object ReadES2Hive {
 
     val conf = new SparkConf().setAppName(args(args.length-1))
     val sc = new SparkContext(conf)
-    val sqlContext = new SQLContext(sc)
+//    val sqlContext = new SQLContext(sc)
+    // Use HiveContext not SQLContext
+    val sqlContext = new org.apache.spark.sql.hive.HiveContext(sc)
 
     val query :String = "?q=*:*";
 //    val esTable :String = "mmconsume/payevents"
