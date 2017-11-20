@@ -3,6 +3,7 @@ package org.apache.hadoop.util;
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.engine.SparkEngine;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -17,15 +18,28 @@ import java.util.Properties;
 public class HadoopUtil {
     private static final Logger log = LoggerFactory.getLogger(HadoopUtil.class);
     private static final String HADOOP_PROPERTIES ="./src/main/resources/hadoop.properties";
+//    private static final String HADOOP_PROPERTIES ="/hadoop.properties";
+
+    private static String HADOOP_PLATFORM = null;
+
+    private  static String getKey(String key){
+        Properties properties = new Properties();
+        try {
+            properties.load(new FileInputStream(new File(HADOOP_PROPERTIES)));
+            return  properties.getProperty(key);
+        }catch (Exception e){
+            log.error("加载配置文件{}失败！",HADOOP_PLATFORM);
+        }
+        return null;
+
+    }
 
     private static Configuration conf = null ;
-    public  static Configuration getConf() throws IOException {
+    public  static Configuration getConf()  {
         if(conf == null ){
             conf  = new Configuration();
-            Properties properties = new Properties();
             try {
-                properties.load(new FileInputStream(HADOOP_PROPERTIES));
-                String platform = properties.getProperty("platform");
+                String platform = getHadoopPlatform();
                 switch (platform){
                     case "apache":
                     case "cdh":
@@ -42,8 +56,6 @@ public class HadoopUtil {
                 log.error("加载配置文件{}失败！",HADOOP_PROPERTIES);
             }
         }
-//        Configuration.dumpConfiguration(conf,new FileWriter("./conf.out"));
-//        System.exit(-1);
         return conf ;
     }
 
@@ -53,7 +65,8 @@ public class HadoopUtil {
      * @param platform
      */
     private static void handle(Configuration conf, String platform) throws MalformedURLException {
-        File file = new File("./src/main/resources/"+platform);
+        HADOOP_PLATFORM = platform;
+        File file = new File(getRealPlatformPath());
         if(!file.exists() || !file.isDirectory()){
             log.error("路径{}不是目录或不存在！",file.getAbsolutePath());
             return ;
@@ -67,6 +80,18 @@ public class HadoopUtil {
                 log.info("资源{}不是以xml结尾！",f.getAbsolutePath());
             }
         }
+
+        // special treat
+        conf.set("yarn.application.classpath", SparkEngine.getYarnClasspath());
     }
 
+    public static String getHadoopPlatform() {
+        if(HADOOP_PLATFORM == null){
+            HADOOP_PLATFORM = getKey("platform");
+        }
+        return HADOOP_PLATFORM;
+    }
+    private static String getRealPlatformPath(){
+        return "./src/main/resources/"+getHadoopPlatform();
+    }
 }
